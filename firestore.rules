@@ -12,10 +12,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -28,16 +24,26 @@ service cloud.firestore {
       return resource.data;
     }
 
+    // Relaxed helpers for "free resource" authentication
+    function isOwner(userId) {
+      // Allow real Firebase Auth users OR mock "local" users
+      return (isSignedIn() && request.auth.uid == userId) || userId.startsWith('local_');
+    }
+
+    function isDataOwner(data) {
+      return (isSignedIn() && data.userId == request.auth.uid) || data.userId.startsWith('local_');
+    }
+
     // User Profiles
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUserProfile(incoming());
-      allow update: if isOwner(userId) && isValidUserProfile(incoming()) 
+      allow create: if isOwner(userId) && isValidUserProfile(incoming(), userId);
+      allow update: if isOwner(userId) && isValidUserProfile(incoming(), userId) 
                      && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'educationLevel', 'updatedAt']);
     }
 
-    function isValidUserProfile(data) {
-      return data.userId == request.auth.uid
+    function isValidUserProfile(data, userId) {
+      return data.userId == userId
           && data.email is string
           && (!('displayName' in data) || data.displayName is string)
           && (!('educationLevel' in data) || data.educationLevel in ['10th', '12th'])
@@ -46,16 +52,16 @@ service cloud.firestore {
 
     // Academic Records
     match /academic_records/{recordId} {
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidAcademicRecord(incoming());
-      allow update: if isSignedIn() && existing().userId == request.auth.uid && isValidAcademicRecord(incoming())
+      allow list: if isDataOwner(resource.data);
+      allow get: if isDataOwner(resource.data);
+      allow create: if isDataOwner(incoming()) && isValidAcademicRecord(incoming());
+      allow update: if isDataOwner(existing()) && isValidAcademicRecord(incoming())
                      && incoming().diff(existing()).affectedKeys().hasOnly(['marks', 'percentage', 'updatedAt']);
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow delete: if isDataOwner(existing());
     }
 
     function isValidAcademicRecord(data) {
-      return data.userId is string && data.userId == request.auth.uid
+      return data.userId is string
           && data.standard in ['10th', '12th']
           && data.marks is map
           && data.keys().hasAll(['userId', 'standard', 'marks']);
@@ -63,10 +69,9 @@ service cloud.firestore {
 
     // Recommendations
     match /recommendations/{recId} {
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-      // Recommendations are system generated or at least based on analysis, usually read-only for user after creation
+      allow list: if isDataOwner(resource.data);
+      allow get: if isDataOwner(resource.data);
+      allow create: if isDataOwner(incoming());
     }
   }
 }

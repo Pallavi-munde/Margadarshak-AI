@@ -25,12 +25,14 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setAuthReady(true);
-      if (u) {
+    // Simple Local Auth Loader
+    const savedUser = localStorage.getItem("student_auth_session");
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        setUser(u);
         const userDocPath = `users/${u.uid}`;
-        // Upsert user profile
+        // Upsert user profile to Firestore
         setDoc(doc(db, "users", u.uid), {
           userId: u.uid,
           displayName: u.displayName,
@@ -39,9 +41,12 @@ export default function App() {
         }, { merge: true }).catch(error => {
           handleFirestoreError(error, OperationType.WRITE, userDocPath);
         });
+      } catch (e) {
+        console.error("Auth session parse error", e);
+        localStorage.removeItem("student_auth_session");
       }
-    });
-    return unsubscribe;
+    }
+    setAuthReady(true);
   }, []);
 
   const handleMarksSubmit = async (marks: Record<string, number>) => {

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const apiKey = import.meta.env.VITE_USER_API_KEY || (typeof process !== "undefined" ? process.env.GEMINI_API_KEY : "") || "";
+const ai = new GoogleGenAI({ apiKey });
 
 export interface RecommendationResult {
   career: string;
