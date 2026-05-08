@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user basic information and education level.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "educationLevel": { "type": "string", "enum": ["10th", "12th"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "educationLevel"]
+    },
+    "AcademicRecord": {
+      "title": "Academic Record",
+      "description": "Subject-wise marks for 10th or 12th standards.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "standard": { "type": "string", "enum": ["10th", "12th"] },
+        "marks": {
+          "type": "object",
+          "properties": {
+            "math": { "type": "integer" },
+            "science": { "type": "integer" },
+            "english": { "type": "integer" },
+            "socialStudies": { "type": "integer" },
+            "physics": { "type": "integer" },
+            "chemistry": { "type": "integer" },
+            "biology": { "type": "integer" },
+            "accountancy": { "type": "integer" },
+            "economics": { "type": "integer" },
+            "businessStudies": { "type": "integer" }
+          }
+        },
+        "percentage": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "standard", "marks"]
+    },
+    "Recommendation": {
+      "title": "Career Recommendation",
+      "description": "AI-generated career path suggestions.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "standard": { "type": "string" },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "career": { "type": "string" },
+              "confidence": { "type": "number" },
+              "reason": { "type": "string" },
+              "roadmap": { "type": "array", "items": { "type": "string" } },
+              "exams": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles"
+    },
+    "/academic_records/{recordId}": {
+      "schema": "AcademicRecord",
+      "description": "Student marks records"
+    },
+    "/recommendations/{recId}": {
+      "schema": "Recommendation",
+      "description": "AI recommendations"
+    }
+  }
+}
