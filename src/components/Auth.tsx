@@ -7,9 +7,20 @@ interface AuthProps {
 }
 
 export function Auth({ user }: AuthProps) {
-  const login = () => {
+  const login = async () => {
     const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("Login error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        alert("Domain Not Authorized: Please add this URL to your Firebase Console 'Authorized Domains' list.");
+      } else if (error.code === 'auth/popup-blocked') {
+        alert("Popup Blocked: Please allow popups for this site to sign in.");
+      } else {
+        alert("Login failed: " + (error.message || "Unknown error"));
+      }
+    }
   };
 
   const logout = () => signOut(auth);

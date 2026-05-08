@@ -33,12 +33,13 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow create: if isOwner(userId) && isValidUserProfile(incoming());
       allow update: if isOwner(userId) && isValidUserProfile(incoming()) 
-                     && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'educationLevel', 'updatedAt']);
+                     && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'educationLevel', 'updatedAt']);
     }
 
     function isValidUserProfile(data) {
       return data.userId == request.auth.uid
           && data.email is string
+          && (!('displayName' in data) || data.displayName is string)
           && (!('educationLevel' in data) || data.educationLevel in ['10th', '12th'])
           && data.keys().hasAll(['userId', 'email']);
     }
